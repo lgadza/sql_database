@@ -17,12 +17,18 @@ productsRouter.post("/", async (req, res, next) => {
 productsRouter.get("/", async (req, res, next) => {
   try {
     const query = {};
-    if (req.query.firstName)
-      query.firstName = { [Op.iLike]: `${req.query.firstName}%` };
+    const minPrice = req.params.minPrice;
+    const maxPrice = req.params.maxPrice;
+    if (req.query.name) query.name = { [Op.iLike]: `%${req.query.name}%` };
+    else if (req.query.category)
+      query.category = { [Op.iLike]: `${req.query.category}%` };
+    else if (req.query.price)
+      query.price = { [Op.between]: [minPrice, maxPrice] };
+
     const products = await ProductsModel.findAll({
       where: { ...query },
-      attributes: ["firstName", "lastName"],
-    }); // (SELECT) pass an array for the include list
+      attributes: ["name", "category", "price", "image", "description", "id"],
+    });
     res.send(products);
   } catch (error) {
     next(error);
@@ -32,7 +38,7 @@ productsRouter.get("/", async (req, res, next) => {
 productsRouter.get("/:productId", async (req, res, next) => {
   try {
     const product = await ProductsModel.findByPk(req.params.productId, {
-      attributes: { exclude: ["createdAt", "updatedAt"] }, // (SELECT) pass an object with exclude property for the omit list
+      attributes: { exclude: ["createdAt", "updatedAt"] },
     });
     if (product) {
       res.send(product);
